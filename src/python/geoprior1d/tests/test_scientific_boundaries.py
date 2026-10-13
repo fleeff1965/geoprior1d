@@ -80,6 +80,23 @@ class MinimumDepthTests(unittest.TestCase):
             if frequency:
                 self.assertGreater(present, 20)
 
+    def test_all_upper_units_optional_leaves_background(self):
+        info = geology(.3)
+        info['Sections']['frequency'] = np.array([.4, .3, 1.])
+        z = np.arange(1., 21.)
+        background_only = 0
+        for seed in range(300):
+            m, resistivity, _, flags = _generate_single_realization(0, info, z, seed)
+            self.assertEqual(flags[:2], [0, 0])
+            if not np.any(m != 3):
+                background_only += 1
+                self.assertEqual(len(np.unique(resistivity)), 1)  # one background layer
+        self.assertGreater(background_only, 300 * .6 * .7 * .6)  # expected share is .42
+        np.random.seed(123)
+        results = [get_prior_sample(info, z, 200, n_processes=p) for p in (1, 2)]
+        for _, _, _, flags in results:
+            self.assertEqual(list(flags[:2]), [0, 0])
+
 
 class GroundwaterTests(unittest.TestCase):
     def setUp(self):
